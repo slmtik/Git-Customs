@@ -2,6 +2,10 @@
 
 repositoryName=$(basename $(git remote show -n origin | grep Push | cut -d: -f2-))
 
+[[ "$repositoryName" == "origin" ]] \
+    && echo "This repository doesn't have remote repository" \
+    && exit 1
+
 sourceBranch=$(git rev-parse --abbrev-ref HEAD)
 destinationBranch="${1:-develop}"
 
