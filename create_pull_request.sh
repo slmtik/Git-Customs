@@ -1,6 +1,6 @@
 # #!/bin/bash
 
-repositoryName=$(basename $(git remote show -n origin | grep Push | cut -d: -f2-))
+repositoryName=$(basename $(git remote get-url origin))
 
 [[ "$repositoryName" == "origin" ]] \
     && echo "This repository doesn't have remote repository" \
