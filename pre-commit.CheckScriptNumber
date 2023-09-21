@@ -1,34 +1,66 @@
 #!/bin/sh
 
-scriptFolderpath="Database\DB Scripts\Alter\vCurrent"
+#pre-commit hook to check the correct ordering for the scripts
+#1. check if the number is valid according to the $regexFull pattern
+#2. check for duplicates in the index
+#3. check for duplicates in the working copy
+#4. check for duplicates in the commit history
+#Optional: you can uncomment line with 'git fetch --all' to have fresh remote for checking, but it commit will be taking longer to complete
+#IMPORTANT: for script renaming this pre-commit should be disabled
 
-regex="\d{3}\.\d{2}\.\K(\d{4})"
+scriptFolderpath="Database/DB Scripts/Alter/vCurrent"
+remoteBranch="origin/develop"
+
+regexFull="\d{3}\.\d{2}\.\K(\d{4})"
+regexPartial="\d{3}\.\d{2}\.\K"
 
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
-	against=HEAD
+	localBranch=HEAD
 else
-	against=$(git hash-object -t tree /dev/null)
+	localBranch=$(git hash-object -t tree /dev/null)
 fi
 
 exec 1>&2
 
-echo git ls-tree --name-only -r HEAD "Database\DB Scripts\Alter\vCurrent" | grep -oP "$regex"
+errorMsg=
+newScriptsOrders=()
 
-foo=$(git ls-tree --name-only -r HEAD "Database\DB Scripts\Alter\vCurrent" | grep -oP "$regex")
-bar=$(git ls-tree --name-only -r $against $scriptFolderpath | grep -oP $regex)
-
-echo foo=$foo
-echo bar=$bar
-
-for newScript in $(git diff-index --name-only -r $against "$scriptFolderpath"  | grep -oP "$regex")
+while IFS= read -r newScript
 do
-	for exisitngScript in $(git ls-tree --name-only -r $against $scriptFolderpath | grep -oP $regex)
+	[[ -z $newScript ]] && exit 0
+
+	newScriptOrder=$(echo "$newScript" | grep -oP $regexFull)
+
+	[[ -z $newScriptOrder ]] && errorMsg="$errorMsg"$'\n'"Invalid script order number found: $newScript" && continue
+
+	if [[ ${newScriptsOrders[@]} =~ $newScriptOrder ]]
+	then
+		errorMsg="$errorMsg"$'\n'"There is already a script with the same order in the index: $newScriptOrder"
+		continue
+	else
+		newScriptsOrders+=($newScriptOrder)
+	fi
+	
+	while IFS= read -r existingLocalScriptOrder
 	do
-		if [ $newScript -eq $exisitngScript ]; 
-        then
-            echo "Duplicate script order number found : $exisitngScript";
-            exit 1
-        fi
-	done
-done
+		if [[ ! -z $existingLocalScriptOrder ]] 
+		then 
+			errorMsg="$errorMsg"$'\n'"There is already a script with the same order in the working copy: $existingLocalScriptOrder"
+			break
+		fi
+	done <<< $(git ls-tree --name-only -r $localBranch "$scriptFolderpath" | grep -oP "${regexPartial}(${newScriptOrder})")
+
+	# git fetch --all
+	while IFS= read -r existingRemoteScriptOrder
+	do
+		if [[ ! -z $existingRemoteScriptOrder ]] 
+		then 
+			errorMsg="$errorMsg"$'\n'"There is already a script with the same order in the history: $existingRemoteScriptOrder"
+			break
+		fi
+	done <<< $(git ls-tree --name-only -r "$remoteBranch" "$scriptFolderpath" | grep -oP "${regexPartial}(${newScriptOrder})")
+
+done <<< "$(git diff-index --name-only -r $localBranch "$scriptFolderpath")"
+
+[[ ! -z $errorMsg ]] && echo "$errorMsg" && exit 1
