@@ -6,7 +6,7 @@ repositoryName=$(basename $(git remote get-url origin))
     && echo "This repository doesn't have remote repository" \
     && exit 1
 
-sourceBranch=$(git rev-parse --abbrev-ref HEAD)
+sourceBranch=$(git branch --show-current)
 destinationBranch="${1:-develop}"
 
 pullRequestTitle=$(git log -1 --pretty=%B | head -1)
