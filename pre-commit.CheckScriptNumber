@@ -64,3 +64,5 @@ do
 done <<< "$(git diff-index --name-only -r $localBranch "$scriptFolderpath")"
 
 [[ ! -z $errorMsg ]] && echo "$errorMsg" && exit 1
+
+exit 0

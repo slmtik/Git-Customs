@@ -1,4 +1,4 @@
-# #!/bin/bash
+#!/bin/bash
 
 editor=$(git config --get core.editor)
 gitDir=$(git rev-parse --git-dir)
@@ -83,12 +83,12 @@ Pull request creation aborted" \
 
 #https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-create-pull-request.html#how-to-create-pull-request-cli
 
-response=$(aws codecommit create-pull-request --title "$pullRequestTitle" --description "$pullRequestDescription" --targets repositoryName=$repositoryName,sourceReference=$sourceBranch,destinationReference=$destinationBranch)
+# response=$(aws codecommit create-pull-request --title "$pullRequestTitle" --description "$pullRequestDescription" --targets repositoryName=$repositoryName,sourceReference=$sourceBranch,destinationReference=$destinationBranch)
 
-[[ -z "$response" ]] && exit 1
+# [[ -z "$response" ]] && exit 1
 
-pullRequestId=$(echo "$response" | python -c "import sys, json; print(json.load(sys.stdin)['pullRequest']['pullRequestId'])")
+# pullRequestId=$(echo "$response" | python -c "import sys, json; print(json.load(sys.stdin)['pullRequest']['pullRequestId'])")
 
-link="https://us-east-1.console.aws.amazon.com/codesuite/codecommit/repositories/YPLM-YuniquePLM/pull-requests/$pullRequestId"
+# link="https://us-east-1.console.aws.amazon.com/codesuite/codecommit/repositories/YPLM-YuniquePLM/pull-requests/$pullRequestId"
 
-python -m webbrowser $link
+# python -m webbrowser $link
