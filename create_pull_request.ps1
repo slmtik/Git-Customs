@@ -3,12 +3,11 @@ Param(
   $sourceCommit = $null
 )
 
-$editor = git config --get core.editor
+$editor = (git config --get core.editor).Replace("'", """") # in case of editor's value contains path, we need to replace single quote with double quotes
 $gitDir = git rev-parse --git-dir
 $pullRequestMessageFile=$gitDir + "/PULLREQUEST_MSG"
 $pullRequestSelectBranchFile=$gitDir + "/PULLREQUEST_BRANCHES"
 
-$repositoryName=
 try {
     $repositoryName= ([uri](git remote get-url origin)).Segments[-1] 2>$null
 }
@@ -18,27 +17,36 @@ catch {
 }
 
 if ($null -eq $sourceCommit) { $sourceBranch = git branch --show-current }
-else { $sourceBranch = (git branch --contains $sourceCommit --format='%(refname:short)') -split '\r?\n' }
+else 
+{ 
+    $sourceBranch = (git branch --contains $sourceCommit --format='%(refname:short)') -split '\r?\n' 
 
-if ([array]$sourceBranch.Length -gt 1)
-{
-    $sourceBranch[0] > $pullRequestSelectBranchFile
-    for($i = 1; $i -lt ($sourceBranch.Length); $i++)
+    if ([array]$sourceBranch.Length -gt 1)
     {
-        $sourceBranch[$i] >> $pullRequestSelectBranchFile
-    }
-    "#Multiple branches for this commit are detected." >> $pullRequestSelectBranchFile
-    "#Please move the desired branch to the first line." >> $pullRequestSelectBranchFile
-    "#Lines starting with '#' will be ignored, and an empty file aborts the pull request creation." >> $pullRequestSelectBranchFile
-
-    cmd.exe /c $editor $pullRequestSelectBranchFile
-
-    foreach($line in Get-Content $pullRequestSelectBranchFile) {
-        if($line -like '#*'){
-            continue
+        $sourceBranch[0] > $pullRequestSelectBranchFile
+        for($i = 1; $i -lt ($sourceBranch.Length); $i++)
+        {
+            $sourceBranch[$i] >> $pullRequestSelectBranchFile
         }
-        $sourceBranch = $line
-        break
+        "#Multiple branches for this commit are detected." >> $pullRequestSelectBranchFile
+        "#Please move the desired branch to the first line." >> $pullRequestSelectBranchFile
+        "#Lines starting with '#' will be ignored, and an empty file aborts the pull request creation." >> $pullRequestSelectBranchFile
+
+        cmd.exe /c $editor $pullRequestSelectBranchFile
+
+        foreach($line in Get-Content $pullRequestSelectBranchFile) {
+            if($line -like '#*'){
+                continue
+            }
+            $sourceBranch = $line
+            break
+        }
+
+        if (!(git rev-parse --verify www) 2>$null)
+        {
+            Write-Host "Non-existing branch was selected. Please restart the script."
+            exit 1
+        }
     }
 }
 
