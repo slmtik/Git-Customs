@@ -19,7 +19,7 @@ catch {
 if ($null -eq $sourceCommit) { $sourceBranch = git branch --show-current }
 else 
 { 
-    $sourceBranch = (git branch --contains $sourceCommit --format='%(refname:short)') -split '\r?\n' 
+    $sourceBranch = (git branch --contains $sourceCommit --format='%(refname:short)') -split '\r?`n' 
 
     if ([array]$sourceBranch.Length -gt 1)
     {
@@ -57,10 +57,10 @@ $pullRequestTitle = git log -1 --pretty=%B | Select-Object -First 1
 $pullRequestDescription = $null
 foreach($line in (git log $sourceBranch --not origin/$destinationBranch --pretty=%B)) {
     if($line -ne $pullRequestTitle){
-        $pullRequestDescription += $line + '\n'
+        $pullRequestDescription += $line + '`n'
     }
 }
-$pullRequestDescription = $pullRequestDescription.TrimEnd("\n")
+$pullRequestDescription = $pullRequestDescription.TrimEnd("`n")
 
 $pullRequestTitle > $pullRequestMessageFile
 $pullRequestDescription >> $pullRequestMessageFile
@@ -81,9 +81,9 @@ foreach($line in Get-Content $pullRequestMessageFile) {
         $pullRequestTitle = $line
         $firstLineFetched = $true
     }
-    else { $pullRequestDescription += $line + '\n' }
+    else { $pullRequestDescription += $line + '`n' }
 }
-$pullRequestDescription = $pullRequestDescription.TrimEnd("\n")
+$pullRequestDescription = $pullRequestDescription.TrimEnd("`n")
 
 if (!$pullRequestTitle -or !$pullRequestDescription)
 {
@@ -93,11 +93,9 @@ if (!$pullRequestTitle -or !$pullRequestDescription)
 
 # https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-create-pull-request.html#how-to-create-pull-request-cli
 
-$response = [string](aws codecommit create-pull-request --title $pullRequestTitle --description $pullRequestDescription --targets repositoryName=$repositoryName,sourceReference=$sourceBranch,destinationReference=$destinationBranch)
+$pullRequestId = aws codecommit create-pull-request --title $pullRequestTitle --description $pullRequestDescription --targets repositoryName=$repositoryName,sourceReference=$sourceBranch,destinationReference=$destinationBranch --output text --query "pullRequest.pullRequestId"
 
-if (!$response) { exit 1 }
-
-$pullRequestId = (ConvertFrom-Json $response).pullRequest.pullRequestId
+if (!$pullRequestId) { exit 1 }
 
 $link = "https://us-east-1.console.aws.amazon.com/codesuite/codecommit/repositories/$repositoryName/pull-requests/$pullRequestId"
 
