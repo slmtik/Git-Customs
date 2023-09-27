@@ -83,6 +83,7 @@ foreach($line in Get-Content $pullRequestMessageFile) {
     }
     else { $pullRequestDescription += $line + '\n' }
 }
+$pullRequestDescription = $pullRequestDescription.TrimEnd("\n")
 
 if (!$pullRequestTitle -or !$pullRequestDescription)
 {
@@ -92,7 +93,7 @@ if (!$pullRequestTitle -or !$pullRequestDescription)
 
 # https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-create-pull-request.html#how-to-create-pull-request-cli
 
-$response = aws codecommit create-pull-request --title $pullRequestTitle --description $pullRequestDescription --targets repositoryName=$repositoryName,sourceReference=$sourceBranch,destinationReference=$destinationBranch
+$response = [string](aws codecommit create-pull-request --title $pullRequestTitle --description $pullRequestDescription --targets repositoryName=$repositoryName,sourceReference=$sourceBranch,destinationReference=$destinationBranch)
 
 if (!$response) { exit 1 }
 
