@@ -18,15 +18,16 @@ catch {
 
 if ($null -eq $sourceCommit) { $sourceBranch = git branch --show-current }
 else 
-{ 
-    $sourceBranch = (git branch --contains $sourceCommit --format='%(refname:short)') -split '\r?`n' 
+{
+    $sourceBranches = (git show-ref --heads | Select-String "^$sourceCommit refs\/heads\/(?'branchName'\S.+)$") `
+        | Select-Object -ExpandProperty Matches `
+        | Select-Object @{l="BranchName";e={$_.groups[1].Value}}
 
-    if ([array]$sourceBranch.Length -gt 1)
+    if ($sourceBranches.Length -gt 1)
     {
-        $sourceBranch[0] > $pullRequestSelectBranchFile
-        for($i = 1; $i -lt ($sourceBranch.Length); $i++)
+        for($i = 0; $i -lt ($sourceBranches.Length); $i++)
         {
-            $sourceBranch[$i] >> $pullRequestSelectBranchFile
+            $sourceBranches[$i].BranchName >> $pullRequestSelectBranchFile
         }
         "#Multiple branches for this commit are detected." >> $pullRequestSelectBranchFile
         "#Please move the desired branch to the first line." >> $pullRequestSelectBranchFile
