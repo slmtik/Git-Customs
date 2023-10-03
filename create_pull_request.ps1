@@ -42,7 +42,7 @@ else
             break
         }
 
-        if (!(git rev-parse --verify www) 2>$null)
+        if (!(git rev-parse --verify $sourceBranch) 2>$null)
         {
             Write-Host "Non-existing branch was selected. Please restart the script."
             exit 1
@@ -57,7 +57,7 @@ $pullRequestTitle = git log -1 --pretty=%B | Select-Object -First 1
 $pullRequestDescription = $null
 foreach($line in (git log $sourceBranch --not origin/$destinationBranch --pretty=%B)) {
     if($line -ne $pullRequestTitle){
-        $pullRequestDescription += $line + '`n'
+        $pullRequestDescription += $line + "`n"
     }
 }
 $pullRequestDescription = $pullRequestDescription.TrimEnd("`n")
@@ -81,7 +81,7 @@ foreach($line in Get-Content $pullRequestMessageFile) {
         $pullRequestTitle = $line
         $firstLineFetched = $true
     }
-    else { $pullRequestDescription += $line + '`n' }
+    else { $pullRequestDescription += $line + "`n" }
 }
 $pullRequestDescription = $pullRequestDescription.TrimEnd("`n")
 
