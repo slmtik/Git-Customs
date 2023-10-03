@@ -49,9 +49,13 @@ else
             exit 1
         }
     }
+    else 
+    {
+        $sourceBranch = $sourceBranches[0].BranchName
+    }
 }
 
-$pullRequestTitle = git log -1 --pretty=%B | Select-Object -First 1
+$pullRequestTitle = git log $sourceBranch -1 --pretty=%B | Select-Object -First 1
 
 # git fetch --all
 
