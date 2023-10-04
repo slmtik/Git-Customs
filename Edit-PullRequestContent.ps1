@@ -29,6 +29,7 @@ $listBranchSelect = New-Object System.Windows.Forms.ComboBox
 $listBranchSelect.Location = New-Object System.Drawing.Point(100,45)
 $listBranchSelect.Size = New-Object System.Drawing.Size(120,20)
 $listBranchSelect.Height = 80
+$listBranchSelect.DropDownStyle = 2;
 [void] $listBranchSelect.Items.AddRange($branches)
 $listBranchSelect.SelectedIndex = 0
 $form.Controls.Add($listBranchSelect)

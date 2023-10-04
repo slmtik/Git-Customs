@@ -11,44 +11,38 @@ catch {
     exit 1
 }
 
-if ($null -eq $sourceCommit) { $sourceBranches = git branch --show-current }
+$sourceBranches = @()
+if ($null -eq $sourceCommit) { $sourceBranches += (git branch --show-current) }
 else 
 {
-    $sourceBranches = (git show-ref --heads | Select-String "^$sourceCommit refs\/heads\/(?'branchName'\S.+)$") `
+    $sourceBranches += (git show-ref --heads | Select-String "^$sourceCommit refs\/heads\/(?'branchName'\S.+)$") `
         | Select-Object -ExpandProperty Matches `
-        | Select-Object @{l="BranchName";e={$_.groups[1].Value}}
-
-    if ($sourceBranches.Length -gt 1)
-    {
-        for($i = 0; $i -lt ($sourceBranches.Length); $i++)
-        {
-            $sourceBranches[$i].BranchName >> $pullRequestSelectBranchFile
-        }
-    }
+        | Select-Object @{l="BranchName";e={$_.groups[1].Value}} `
+        | ForEach-Object {$_.BranchName}
 }
 
-$pullRequestTitle = git log $sourceBranch -1 --pretty=%B | Select-Object -First 1
+$pullRequestTitle = git log $sourceBranches[0] -1 --pretty=%B | Select-Object -First 1
 
 # git fetch --all
 
 $pullRequestDescription = $null
-foreach($line in (git log $sourceBranch --not origin/$destinationBranch --pretty=%B)) {
+foreach($line in (git log $sourceBranches[0] --not origin/$destinationBranch --pretty=%B)) {
     if($line -ne $pullRequestTitle){
-        $pullRequestDescription += $line + "`n"
+        $pullRequestDescription += $line + "`r`n"
     }
 }
 
-& $PSScriptRoot/Edit-PullRequestContent.ps1 $destinationBranch $sourceBranches $pullRequestTitle $pullRequestDescription
+$pullRequestData = & $PSScriptRoot/Edit-PullRequestContent.ps1 $destinationBranch $sourceBranches $pullRequestTitle $pullRequestDescription
 
-if (!$pullRequestTitle -or !$pullRequestDescription)
+if (!$pullRequestData.Title -or !$pullRequestData.Description)
 {
-    Write-Host "No title and/or description provided. Pull request creation aborted."
+    Write-Host "Pull request creation was aborted or title and/or description weren't provided."
     exit 1
 }
 
 # https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-create-pull-request.html#how-to-create-pull-request-cli
 
-$pullRequestId = aws codecommit create-pull-request --title $pullRequestTitle --description $pullRequestDescription --targets repositoryName=$repositoryName,sourceReference=$sourceBranch,destinationReference=$destinationBranch --output text --query "pullRequest.pullRequestId"
+$pullRequestId = aws codecommit create-pull-request --title $pullRequestData.Title --description $pullRequestData.Description --targets repositoryName=$repositoryName,sourceReference="$($pullRequestData.SourceBranch)",destinationReference=$destinationBranch --output text --query "pullRequest.pullRequestId"
 
 if (!$pullRequestId) { exit 1 }
 
