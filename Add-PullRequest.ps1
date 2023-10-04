@@ -3,6 +3,8 @@ Param(
   $sourceCommit = $null
 )
 
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 try {
     $repositoryName= ([uri](git remote get-url origin)).Segments[-1] 2>$null
 }
@@ -26,9 +28,16 @@ $pullRequestTitle = git log $sourceBranches[0] -1 --pretty=%B | Select-Object -F
 # git fetch --all
 
 $pullRequestDescription = $null
+$firstLine = $true
 foreach($line in (git log $sourceBranches[0] --not origin/$destinationBranch --pretty=%B)) {
     if($line -ne $pullRequestTitle){
-        $pullRequestDescription += $line + "`r`n"
+        $pullRequestDescription += $line
+        if (!$first){
+            $pullRequestDescription += "`r`n"
+        }
+        else {
+            $first = $false
+        }
     }
 }
 
