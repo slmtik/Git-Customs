@@ -30,14 +30,8 @@ $pullRequestTitle = git log $sourceBranches[0] -1 --pretty=%B | Select-Object -F
 $pullRequestDescription = $null
 $firstLine = $true
 foreach($line in (git log $sourceBranches[0] --not origin/$destinationBranch --pretty=%B)) {
-    if($line -ne $pullRequestTitle){
-        $pullRequestDescription += $line
-        if (!$first){
-            $pullRequestDescription += "`r`n"
-        }
-        else {
-            $first = $false
-        }
+    if($line -ne $pullRequestTitle -and $line){
+        $pullRequestDescription += $line + "`r`n"
     }
 }
 
