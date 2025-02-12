@@ -88,8 +88,8 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK)
 {
     $pullRequestData = [PSCustomObject]@{
         SourceBranch    = $listBranchSelect.SelectedItem
-        Title           = $textBoxTitle.Text
-        Description     = $textBoxDescription.Text
+        Title           = $textBoxTitle.Text.Replace("""", "\""")
+        Description     = $textBoxDescription.Text.Replace("""", "\""")
     }
     return $pullRequestData
 }
